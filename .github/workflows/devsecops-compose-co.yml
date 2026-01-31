@@ -49,17 +49,17 @@ jobs:
     - name: SAST users-service
       run: |
         cd users-service
-        npx semgrep --config=auto --severity=ERROR
+        semgrep --config=auto --severity=ERROR
 
     - name: SAST academic-service
       run: |
         cd academic-service
-        npx semgrep --config=auto --severity=ERROR
+        semgrep --config=auto --severity=ERROR
 
     - name: SAST api-gateway
       run: |
         cd api-gateway
-        npx semgrep --config=auto --severity=ERROR
+        semgrep --config=auto --severity=ERROR
 
       
     # 4. Build – Construir imágenes Docker
