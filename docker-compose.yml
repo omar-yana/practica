@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  users-service:
+    image: users-service:latest
+    build: ./users-service
+    container_name: users-service
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  academic-service:
+    image: academic-service:latest
+    build: ./academic-service
+    container_name: academic-service
+    ports:
+      - "3002:3002"
+    restart: unless-stopped
+
+  api-gateway:
+    image: api-gateway:latest
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      - users-service
+      - academic-service
+    restart: unless-stopped
