@@ -18,6 +18,14 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install Semgrep
+      run: pip3 install semgrep
+
     # 3. CI – Tests por microservicio
     - name: Run tests (users-service)
       run: |
