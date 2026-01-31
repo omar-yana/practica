@@ -1,0 +1,101 @@
+name: DevSecOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+jobs:
+  devsecops:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Obtener código
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 2. Preparar Docker
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    # 3. CI – Tests por microservicio
+    - name: Run tests (users-service)
+      run: |
+        cd users-service
+        npm ci
+        npm test
+
+    - name: Run tests (academic-service)
+      run: |
+        cd academic-service
+        npm ci
+        npm test
+
+    - name: Run tests (api-gateway)
+      run: |
+        cd api-gateway
+        npm ci
+        npm test
+    
+    # 4. 🔐 SAST – Análisis estático de código
+    - name: SAST users-service
+      run: |
+        cd users-service
+        npx semgrep --config=auto --severity=ERROR
+
+    - name: SAST academic-service
+      run: |
+        cd academic-service
+        npx semgrep --config=auto --severity=ERROR
+
+    - name: SAST api-gateway
+      run: |
+        cd api-gateway
+        npx semgrep --config=auto --severity=ERROR
+
+      
+    # 4. Build – Construir imágenes Docker
+    - name: Build images with Docker Compose
+      run: docker compose build
+
+    # 5. Seguridad – Escaneo de imágenes (Trivy)
+    # Seguridad – Trivy users-service
+    - name: Trivy scan users-service
+      uses: aquasecurity/trivy-action@0.20.0
+      with:
+        image-ref: users-service:latest
+        severity: CRITICAL
+        exit-code: 1
+    # Seguridad – Trivy academic-service
+    - name: Trivy scan academic-service
+      uses: aquasecurity/trivy-action@0.20.0
+      with:
+       image-ref: academic-service:latest
+       severity: CRITICAL
+       exit-code: 1
+
+# Seguridad – Trivy api-gateway
+    - name: Trivy scan api-gateway
+      uses: aquasecurity/trivy-action@0.20.0
+      with:
+        image-ref: api-gateway:latest
+        severity: CRITICAL
+        exit-code: 1
+
+# 6. CD – Levantar sistema (solo si todo pasó)
+    - name: Deploy with Docker Compose
+      if: success()
+      run: docker compose up -d
+
+    # 7. Smoke tests (API Gateway)
+    - name: Smoke test API Gateway
+      if: success()
+      run: |
+        sleep 10
+        curl -f http://localhost:3000/users
+        curl -f http://localhost:3000/courses
+
+    # 8. Limpieza
+    - name: Shutdown services
+      if: always()
+      run: docker compose down
